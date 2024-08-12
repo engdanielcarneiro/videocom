@@ -1,12 +1,14 @@
 import moviepy.editor as mp
+import cv2 as cv
 import os
 import glob2
 import random2
 
-clip_fps = 24
+clip_fps = 30
+target_size = (1080, 1920)
 folder_path = "D:/projects/about-inspiration/Videos/all"
-keywords = [ "man", "friends", 'luck']
-max_clips_per_keyword = 1
+keywords = ['success', 'victory', 'celebrate', 'sunset', 'love']
+max_clips_per_keyword = 2
 
 def combine_clips(clips):
     final_clip = clips[0].subclip(0,2)
@@ -15,19 +17,28 @@ def combine_clips(clips):
     
     return final_clip
 
-def get_clips(folder_path, keywords, max_clips_per_keyword):
+def resize_video(clip, target_size):
+    width, height = target_size
+    
+    def resize_frame(frame):
+        return cv.resize(frame, (width, height))
+    
+    return clip.fl_image(resize_frame)
+
+def get_clips(keywords, max_clips_per_keyword):
     clips = []
+    used_clips = set()
     for keyword in keywords:
         search_pattern = f"D:/projects/about-inspiration/Videos/all/*{keyword}*.mp4"
         clip_paths = glob2.glob(search_pattern, recursive=True)
-        # num_clips = random2.randint(1, max_clips_per_keyword)
-        selected_clips = random2.sample(clip_paths, min(max_clips_per_keyword, len(clip_paths)))
-        clips.extend(selected_clips)
+        available_clips = [clip for clip in clip_paths if clip not in used_clips]
+        selected_clips = random2.sample(available_clips, min(max_clips_per_keyword, len(available_clips)))
+        used_clips.update(selected_clips)
+        clips.extend([resize_video(mp.VideoFileClip(clip), target_size) for clip in selected_clips])
+    return clips
 
-    return [mp.VideoFileClip(clip) for clip in clips]
-
-clips = get_clips(folder_path, keywords, max_clips_per_keyword)
+clips = get_clips(keywords, max_clips_per_keyword)
 
 combined_clip = combine_clips(clips)
 
-combined_clip.write_videofile("output3.mp4", fps=clip_fps)
+combined_clip.write_videofile("output.mp4", fps=clip_fps)
